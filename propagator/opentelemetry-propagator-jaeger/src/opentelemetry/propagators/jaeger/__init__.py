@@ -26,7 +26,9 @@ from opentelemetry.propagators.textmap import (
     default_setter,
 )
 from opentelemetry.trace import format_span_id, format_trace_id
+import logging
 
+logger = logging.getLogger(__name__)
 
 class JaegerPropagator(TextMapPropagator):
     """Propagator for the Jaeger format.
@@ -49,6 +51,7 @@ class JaegerPropagator(TextMapPropagator):
             context = Context()
         header = getter.get(carrier, self.TRACE_ID_KEY)
         if not header:
+            logger.warning("no header, returning")
             return context
 
         context = self._extract_baggage(getter, carrier, context)
@@ -58,6 +61,7 @@ class JaegerPropagator(TextMapPropagator):
             trace_id == trace.INVALID_TRACE_ID
             or span_id == trace.INVALID_SPAN_ID
         ):
+            logger.warning("invalid id, returning")
             return context
 
         span = trace.NonRecordingSpan(
@@ -68,6 +72,7 @@ class JaegerPropagator(TextMapPropagator):
                 trace_flags=trace.TraceFlags(flags & trace.TraceFlags.SAMPLED),
             )
         )
+        logger.warning("made it to the end")
         return trace.set_span_in_context(span, context)
 
     def inject(
